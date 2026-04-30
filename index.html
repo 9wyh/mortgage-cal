@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>2026 香港物業開支計算機</title>
+    <style>
+        :root { --primary: #1a73e8; --secondary: #34a853; --accent: #e67e22; --bg: #f8f9fa; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #202124; }
+        .card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        h2 { color: var(--primary); font-size: 1.1rem; margin: 0 0 15px 0; display: flex; align-items: center; }
+        h2::before { content: ""; width: 4px; height: 18px; background: var(--primary); margin-right: 10px; border-radius: 2px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.85rem; color: #5f6368; margin-bottom: 6px; font-weight: 500; }
+        input { width: 100%; padding: 12px; border: 1px solid #dadce0; border-radius: 10px; box-sizing: border-box; font-size: 1rem; transition: border 0.3s; }
+        input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 2px rgba(26,115,232,0.1); }
+        .result-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f1f3f4; font-size: 0.95rem; }
+        .result-val { font-weight: 600; color: #202124; }
+        .highlight { color: #d93025; font-size: 1.2rem; }
+        .interest-text { color: var(--accent); }
+        .monthly-box { background: #e8f0fe; padding: 15px; border-radius: 10px; text-align: center; margin-top: 10px; }
+        .monthly-label { font-size: 0.9rem; color: var(--primary); margin-bottom: 5px; font-weight: bold; }
+        .monthly-amount { font-size: 1.8rem; font-weight: 800; color: var(--primary); }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>樓價及按揭設定</h2>
+    <div class="input-group">
+        <label>物業售價 (HK$)</label>
+        <input type="number" id="price" value="8000000" oninput="updateAll()">
+    </div>
+    <div class="grid">
+        <div class="input-group">
+            <label>按揭成數 (%)</label>
+            <input type="number" id="mortgagePercent" value="90" oninput="updateAll()">
+        </div>
+        <div class="input-group">
+            <label>還款年期 (年)</label>
+            <input type="number" id="years" value="30" oninput="updateAll()">
+        </div>
+    </div>
+    <div class="input-group">
+        <label>按揭年利率 (%)</label>
+        <input type="number" id="interestRate" value="4.125" step="0.125" oninput="updateAll()">
+    </div>
+</div>
+
+<div class="card">
+    <h2>每月供款額</h2>
+    <div class="monthly-box">
+        <div class="monthly-label">預計每月還款額</div>
+        <div class="monthly-amount" id="resMonthly">$0</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>初始開支總計</h2>
+    <div class="result-row"><span>首期費用</span><span class="result-val" id="resDownpayment">$0</span></div>
+    <div class="result-row"><span>從價印花稅 (2026)</span><span class="result-val" id="resStamp">$0</span></div>
+    <div class="result-row"><span>按揭保險 (MIP)</span><span class="result-val" id="resMIP">$0</span></div>
+    <div class="result-row"><span>代理佣金 (1%)</span><span class="result-val" id="resComm">$0</span></div>
+    <div class="result-row"><span>預估律師費</span><span class="result-val">$10,000</span></div>
+    <div class="result-row" style="border:none; margin-top:10px;">
+        <span style="font-weight:bold;">所需初始現金總額</span>
+        <span class="result-val highlight" id="resCashTotal">$0</span>
+    </div>
+</div>
+
+<div class="card">
+    <h2>按揭貸款全期分析</h2>
+    <div class="result-row"><span>總貸款額</span><span class="result-val" id="resLoanAmount">$0</span></div>
+    <div class="result-row"><span>全期利息總支出</span><span class="result-val interest-text" id="resTotalInterest">$0</span></div>
+    <div class="result-row" style="border:none;">
+        <span style="font-weight:bold;">總還款額 (本+利)</span>
+        <span class="result-val" id="resTotalRepayment">$0</span>
+    </div>
+</div>
+
+<script>
+function calculateStampDuty(price) {
+    // 根據 2026 年最新政策計算
+    if (price <= 4000000) return 100;
+    if (price <= 4323780) return 100 + (price - 4000000) * 0.2;
+    if (price <= 4500000) return price * 0.015;
+    if (price <= 4935480) return 67500 + (price - 4500000) * 0.1;
+    if (price <= 6000000) return price * 0.0225;
+    if (price <= 6642860) return 135000 + (price - 6000000) * 0.1;
+    if (price <= 9000000) return price * 0.03;
+    if (price <= 10080000) return 270000 + (price - 9000000) * 0.1;
+    if (price <= 20000000) return price * 0.0375;
+    if (price <= 100000000) return price * 0.0425;
+    return price * 0.065; // 2026 豪宅新稅率
+}
+
+function updateAll() {
+    const price = parseFloat(document.getElementById('price').value) || 0;
+    const mPercent = parseFloat(document.getElementById('mortgagePercent').value) || 0;
+    const rate = parseFloat(document.getElementById('interestRate').value) || 0;
+    const years = parseFloat(document.getElementById('years').value) || 0;
+
+    // 1. 按揭及首期
+    const loanAmount = price * (mPercent / 100);
+    const downpayment = price - loanAmount;
+    
+    // 2. 按揭保險預估 (MIP) - 超過 7 成按揭時計算
+    let mip = 0;
+    if (mPercent > 70) {
+        // 粗略估算保費率，實際視年期而定
+        mip = loanAmount * 0.025; 
+    }
+
+    // 3. 雜費計算
+    const stamp = calculateStampDuty(price);
+    const comm = price * 0.01;
+    const legal = 10000;
+    const cashTotal = downpayment + stamp + mip + comm + legal;
+
+    // 4. 每月還款額計算 (標準按揭公式)[cite: 1, 2]
+    const monthlyRate = rate / 100 / 12;
+    const totalMonths = years * 12;
+    let monthlyPayment = 0;
+    
+    if (rate > 0 && years > 0) {
+        monthlyPayment = (loanAmount * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -totalMonths));
+    } else if (years > 0) {
+        monthlyPayment = loanAmount / totalMonths;
+    }
+
+    const totalRepayment = monthlyPayment * totalMonths;
+    const totalInterest = totalRepayment - loanAmount;
+
+    // 5. 更新介面
+    document.getElementById('resMonthly').innerText = '$' + Math.round(monthlyPayment).toLocaleString();
+    document.getElementById('resDownpayment').innerText = '$' + Math.round(downpayment).toLocaleString();
+    document.getElementById('resStamp').innerText = '$' + Math.round(stamp).toLocaleString();
+    document.getElementById('resMIP').innerText = '$' + Math.round(mip).toLocaleString();
+    document.getElementById('resComm').innerText = '$' + Math.round(comm).toLocaleString();
+    document.getElementById('resCashTotal').innerText = '$' + Math.round(cashTotal).toLocaleString();
+    
+    document.getElementById('resLoanAmount').innerText = '$' + Math.round(loanAmount).toLocaleString();
+    document.getElementById('resTotalInterest').innerText = '$' + Math.round(totalInterest).toLocaleString();
+    document.getElementById('resTotalRepayment').innerText = '$' + Math.round(totalRepayment).toLocaleString();
+}
+
+// 首次加載
+updateAll();
+</script>
+</body>
+</html>
